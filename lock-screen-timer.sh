@@ -178,11 +178,11 @@ while true ; do # loop until cancel
         rundll32.exe user32.dll,LockWorkStation
     else
         # Call screen saver lock for Ubuntu versions > 14.04.
-	#pgrep -u $USER | grep -v myPID | xargs kill -9
+	pgrep -u $USER | grep -v myPID | xargs kill -9
 	if [ "$SHUT" = "TRUE" ]; then
 		sudo shutdown now
 	else
-	#	dbus-send --type=method_call --dest=org.gnome.ScreenSaver /org/gnome/ScreenSaver org.gnome.ScreenSaver.Lock
+		dbus-send --type=method_call --dest=org.gnome.ScreenSaver /org/gnome/ScreenSaver org.gnome.ScreenSaver.Lock
 		echo "Locking the SCREEN"
 	fi
 	exit 0
