@@ -39,6 +39,10 @@ class Indicator():
         menu = Gtk.Menu()
         menu_sep = Gtk.SeparatorMenuItem()
         menu.append(menu_sep)
+        # start squid
+        item_squid = Gtk.MenuItem('Internet')
+        item_squid.connect('activate', self.start_squid)
+        menu.append(item_squid)
         # quit
         item_quit = Gtk.MenuItem('Quit')
         item_quit.connect('activate', self.stop)
@@ -59,7 +63,10 @@ class Indicator():
             time.sleep(5)
 
     def stop(self, source):
-        Gtk.main_quit()
+        Gtk.main_quiti()
+
+    def start_squid:
+        os.system("sudo /home/qaisar/scripts/restartSquid.sh"
 
 Indicator()
 # this is where we call GObject.threads_init()

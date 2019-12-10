@@ -66,7 +66,7 @@ function writeToToday () {
 }
 
 MINUTES="$1" # Optional parameter 1 when invoked from terminal.
-export DISPLAY=$(who | egrep fariya\\s+: | awk '{print $2}')
+export DISPLAY=$(who | egrep $THIS_USER\\s+: | awk '{print $2}')
 # if no parameters set default MINUTES to 30
 if [ $# == 0 ]; then
     MINUTES=30
@@ -90,6 +90,11 @@ for i in "$@"; do
 	if [[ $i =~ "auto" ]]; then
 		echo "running in auto start mode"
 		AUTO="TRUE"
+	fi
+	if [[ $i =~ ^user=[a-z]+ ]]; then
+		IFS=’=’ read -ra ARR <<< "$i"
+		THIS_USER="${ARR[1]}"
+		echo "the user is $THIS_USER"
 	fi
 done
 
@@ -144,10 +149,6 @@ while true ; do # loop until cancel
     # or create todays file and put minutes into it.
     MINUTES=$(readFromToday $MINUTES)
     DEFAULT="$MINUTES" # Save deafult for subsequent timers.
-    #if [[ $MINUTES == 0 ]] || [[ $MINUTES == "" ]]; then
-    #    break ; # zero minutes considered cancel.
-    #fi
-
 
     # Loop for X minutes, testing each minute for alert message.
     #(( ++MINUTES )) 
@@ -165,6 +166,7 @@ while true ; do # loop until cancel
         echo "Lock screen in: $MINUTES Minutes" > ~/.lock-screen-timer-remaining
 
         sleep $SLEEP
+        MINUTES=$(readFromToday $MINUTES)
 	(( --MINUTES ))
 	writeToToday $MINUTES
     done
@@ -177,8 +179,8 @@ while true ; do # loop until cancel
         # Call lock screen for Windows 10
         rundll32.exe user32.dll,LockWorkStation
     else
-        # Call screen saver lock for Ubuntu versions > 14.04.
-	pgrep -u $USER | grep -v myPID | xargs kill -9
+        # Kill every process that belongs to this user except this program.
+	pkill -KILL -u $THIS_USER
 	if [ "$SHUT" = "TRUE" ]; then
 		sudo shutdown now
 	else
