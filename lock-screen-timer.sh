@@ -9,10 +9,8 @@
 #       Remove hotplugtv. Replace ogg with paplay.
 #       Cohesion with multi-timer. New sysmonitor indicator style.
 
-# NOTE: Time defaults to 30 minutes.
+# NOTE: Time defaults to 60 minutes.
 #       If previous version is sleeping it is killed.
-#       Zenity is used to pop up entry box to get number of minutes.
-#       If zenity is closed with X or Cancel, no screen lock timer is launched.
 #       Pending lock warning displayed on-screen at set intervals.
 #       Write time remaining to ./.lock-screen-timer-remaining
 
@@ -66,7 +64,7 @@ function writeToToday () {
 }
 
 MINUTES="$1" # Optional parameter 1 when invoked from terminal.
-export DISPLAY=$(who | egrep $THIS_USER\\s+: | awk '{print $2}')
+DISPLAY=$(who | egrep $THIS_USER\\s+: | awk '{print $2}')
 # if no parameters set default MINUTES to 30
 if [ $# == 0 ]; then
     MINUTES=30
@@ -102,7 +100,6 @@ done
 # If its a weekend add another 60 minutes
 if [[ $AUTO == "TRUE" ]]; then
 	w=$(isWeekend)
-	echo "its really true"
 	if [[ $w == "Yes" ]]; then
 		MINUTES=$(( MINUTES+60 ))
 	fi
@@ -111,21 +108,17 @@ fi
 DEFAULT="$MINUTES" # When looping, minutes count down to zero. Save deafult for subsequent timers.
 
 # Check if lock screen timer already running
-pID=$(pgrep -f "${0##*/}") # All PIDs matching lock-screen-timer name
+me=`basename "$0"`
+pID=$(pgrep -f "$me") # All PIDs matching lock-screen-timer name
 PREVIOUS=$(echo "$pID" | grep -v ^"$$") # Strip out this running copy ($$$)
 myPID=$(echo "$pID" | grep  ^"$$") # PID of this program
-echo $PREVIOUS
-if [[ "$PREVIOUS" != "" && $AUTO == "" ]]; then
-    #kill "$PREVIOUS"
-    #rm ~/.lock-screen-timer-remaining
-    if [ "$DISPLAY" != ""  ];then
-    	zenity --info --title="Lock screen timer already running" --text="Already running!"
-	exit 0
-    else
-	echo "Lock screen timer already running myPID=$myPID"
-	exit 0
-    fi
-fi
+
+for i in "$PREVIOUS" ;do
+	if [[ $i != "" ]]; then
+		echo "killing previous process $i"
+		kill $i
+	fi
+done
 
 # Running under WSL (Windows Subsystem for Linux)?
 if cat /proc/version | grep Microsoft; then
@@ -171,7 +164,7 @@ while true ; do # loop until cancel
 	writeToToday $MINUTES
     done
 
-    rm /home/fariya/.lock-screen-timer-remaining # Remove work file others can see our progress with
+    rm /home/$THIS_USER/.lock-screen-timer-remaining # Remove work file others can see our progress with
 
     writeToToday 0
 
@@ -180,12 +173,11 @@ while true ; do # loop until cancel
         rundll32.exe user32.dll,LockWorkStation
     else
         # Kill every process that belongs to this user except this program.
-	pkill -KILL -u $THIS_USER
 	if [ "$SHUT" = "TRUE" ]; then
 		sudo shutdown now
 	else
-		dbus-send --type=method_call --dest=org.gnome.ScreenSaver /org/gnome/ScreenSaver org.gnome.ScreenSaver.Lock
 		echo "Locking the SCREEN"
+		pkill -KILL -u $THIS_USER
 	fi
 	exit 0
     fi

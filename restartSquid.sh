@@ -19,7 +19,7 @@ connect_wifi() {
 	i=0
 	while ! valid_connection  && [[ $i -lt 3 ]];do
 		# Tries to connect
-		nmcli device wifi connect QNet_1 password kaka1234 iface wlan0 --timeout 10 1>/dev/null 2>/dev/null
+		nmcli connection up QNet_2 1>/dev/null 2>/dev/null
 		i=$((i+1))
 	done
 	if [[ $i -lt 3 ]];then
