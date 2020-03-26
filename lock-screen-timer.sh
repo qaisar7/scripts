@@ -63,6 +63,33 @@ function writeToToday () {
 	fi
 }
 
+function logOutOrShutdown () {
+	
+    if [[ $WSL_running == true ]]; then  
+        # Call lock screen for Windows 10
+        rundll32.exe user32.dll,LockWorkStation
+    else
+        # Kill every process that belongs to this user except this program.
+	if [ "$SHUT" = "TRUE" ]; then
+		sudo shutdown now
+	else
+		echo "Locking the SCREEN"
+		pkill -KILL -u $THIS_USER
+	fi
+	exit 0
+    fi
+}
+
+function isBefore9Am() {
+	H=$(date +%H)
+	if (( 10#$H < 9 )); then
+		return 0;
+	fi
+	return 1; 
+}
+
+
+
 MINUTES="$1" # Optional parameter 1 when invoked from terminal.
 DISPLAY=$(who | egrep $THIS_USER\\s+: | awk '{print $2}')
 # if no parameters set default MINUTES to 30
@@ -94,6 +121,7 @@ for i in "$@"; do
 		THIS_USER="${ARR[1]}"
 		echo "the user is $THIS_USER"
 	fi
+	echo "$(date) $THIS_USER logs in " >> /var/log/mylabel.lgo
 done
 
 
@@ -130,13 +158,8 @@ fi
 
 while true ; do # loop until cancel
 
-    # Get number of minutes until lock from user
-    if [[ "$DISPLAY" != "" && "$AUTO" != "TRUE" ]]; then
-    	MINUTES=$(zenity --entry --title="Lock screen timer" --text="Set number of minutes until lock" --entry-text="$DEFAULT")
-        RESULT=$? # Zenity return code
-        if [ $RESULT != 0 ]; then
-            break ; # break out of timer lock screen loop and end this script.
-        fi
+    if isBefore9Am; then
+      logOutOrShutdown
     fi
     # If run in AUTO mode read minutes from todays file if exists
     # or create todays file and put minutes into it.
@@ -168,19 +191,8 @@ while true ; do # loop until cancel
 
     writeToToday 0
 
-    if [[ $WSL_running == true ]]; then  
-        # Call lock screen for Windows 10
-        rundll32.exe user32.dll,LockWorkStation
-    else
-        # Kill every process that belongs to this user except this program.
-	if [ "$SHUT" = "TRUE" ]; then
-		sudo shutdown now
-	else
-		echo "Locking the SCREEN"
-		pkill -KILL -u $THIS_USER
-	fi
-	exit 0
-    fi
+    logOutOrShutdown
+
 
 done # End of while loop getting minutes to next lock screen
 

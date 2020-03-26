@@ -19,7 +19,7 @@ connect_wifi() {
 	i=0
 	while ! valid_connection  && [[ $i -lt 3 ]];do
 		# Tries to connect
-		nmcli connection up QNet_2 1>/dev/null 2>/dev/null
+		nmcli connection up id QNet_2 1>/dev/null 2>/dev/null
 		i=$((i+1))
 	done
 	if [[ $i -lt 3 ]];then

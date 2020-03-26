@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import signal
 import os
+import sys
 import datetime
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, AppIndicator3, GObject
 import time
 from threading import Thread
-
 
 user = os.environ['USER']
 fileName = datetime.date.today().strftime("%Y_%m_%d.time")
@@ -53,7 +53,9 @@ class Indicator():
 
     def show_seconds(self):
         while True:
-            mention = str.rstrip(readMinutesLeft()) + " minutes left"
+            mention = '--'
+            if user != 'qaisar':
+                mention = str.rstrip(readMinutesLeft()) + " minutes left"
             # apply the interface update using  GObject.idle_add()
             GObject.idle_add(
                 self.indicator.set_label,
@@ -63,10 +65,11 @@ class Indicator():
             time.sleep(5)
 
     def stop(self, source):
-        Gtk.main_quiti()
+        os.system("sudo /home/qaisar/scripts/logout.sh " + user )
+        sys.exit(0)
 
-    def start_squid:
-        os.system("sudo /home/qaisar/scripts/restartSquid.sh"
+    def start_squid(self, source):
+        os.system("sudo /home/qaisar/scripts/restartSquid.sh")
 
 Indicator()
 # this is where we call GObject.threads_init()
