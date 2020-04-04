@@ -4,7 +4,7 @@ ARGS=2
 E_BADARGS=85
 
 function usage_help() {
-	echo "Usage: `basename $0` user-name minutes" >&2
+	echo "Usage: `basename $0` user-name minutes pause_after_minutes" >&2
 	exit $E_BADARGS
 }
 
@@ -20,7 +20,11 @@ function check_arguments() {
 	fi
 	re='^[0-9]+$'
 	if ! [[ $2 =~ $re ]] ; then
-		   echo "error: Not a number" >&2; exit 1
+		   echo "error: $2 is not a number" >&2; exit 1
+	fi
+	
+	if ! [[ $3 =~ $re ]] ; then
+		   echo "error: $3 is not a number" >&2; exit 1
 	fi
 	echo "add"
 }

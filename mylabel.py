@@ -17,7 +17,7 @@ def readMinutesLeft():
     minutesFile = open(filePath,'r')
     m = minutesFile.readline()
     minutesFile.close()
-    return m
+    return m.split()
 
 class Indicator():
     def __init__(self):
@@ -55,7 +55,8 @@ class Indicator():
         while True:
             mention = '--'
             if user != 'qaisar':
-                mention = str.rstrip(readMinutesLeft()) + " minutes left"
+                l = readMinutesLeft()
+                mention = l[0] + " mins (" + l[1]+")"
             # apply the interface update using  GObject.idle_add()
             GObject.idle_add(
                 self.indicator.set_label,

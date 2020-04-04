@@ -31,33 +31,35 @@ function todaysFile () {
 	command date +%Y_%m_%d.time
 }
 
+declare -a minutes
 function readFromToday () {
 	if [[ $AUTO ]];then
 		d=$(ls $HOME/times/ | grep $(todaysFile))
 		# Find todays file.
 		if [[ $d ]]; then
-			echo $(cat "$HOME/times/$d")
+			minutes[0]=$(cat "$HOME/times/$d" | cut -d " " -f 1)
+			minutes[1]=$(cat "$HOME/times/$d" | cut -d " " -f 2)
 		else
 			# create todays file if it does not exist.
 			touch $HOME/times/$(todaysFile)
 			chmod 666 $HOME/times/$(todaysFile)
-			echo $1 > $HOME/times/$(todaysFile)
+			echo "$1 $2"> $HOME/times/$(todaysFile)
 
-			# Write the minutes left into the file
-			echo "$1"
+			minutes[0]=$1
+			minutes[1]=$2
 		fi
 
 		return
 	fi
-	echo $1
+	echo "minutes: ${minutes[0]} pause_after:${minutes[1]}"
 }
 
 function writeToToday () {
 	if [[ $AUTO ]];then
 		echo "auto write"
 		d=$(ls $HOME/times/ | grep $(todaysFile))
-		echo $1 > "$HOME/times/$(todaysFile)"
-		echo "wrote $1 to todays file"
+		echo "$1 $2" > "$HOME/times/$(todaysFile)"
+		echo "wrote $1 $2 to todays file"
 	fi
 }
 
@@ -101,7 +103,7 @@ function today_fn () {
 
 function isPauseTimeOn () {
    	t=$(readPauseTime)
-	nt=$(( $t + 600 ))
+	nt=$(( $t + $WAIT_FOR_MINUTES * 60 ))
 	ct=$(date +%s)
 
 	echo "reading pause time $t" $(date --date=@$t)
@@ -141,6 +143,8 @@ function writePauseTime () {
 }
 
 MINUTES="$1" # Optional parameter 1 when invoked from terminal.
+PAUSE_AFTER_MINUTES=30
+WAIT_FOR_MINUTES=10
 ARG_MINUTES="$1"
 DISPLAY=$(who | egrep $THIS_USER\\s+: | awk '{print $2}')
 # if no parameters set default MINUTES to 30
@@ -185,8 +189,6 @@ if [[ $AUTO == "TRUE" ]]; then
 	fi
 fi
 
-DEFAULT="$MINUTES" # When looping, minutes count down to zero. Save deafult for subsequent timers.
-
 # Check if lock screen timer already running
 me=`basename "$0"`
 pID=$(pgrep -f "$me") # All PIDs matching lock-screen-timer name
@@ -217,8 +219,14 @@ while true ; do # loop until cancel
 
     # If run in AUTO mode read minutes from todays file if exists
     # or create todays file and put minutes into it.
-    MINUTES=$(readFromToday $MINUTES)
-    DEFAULT="$MINUTES" # Save deafult for subsequent timers.
+    readFromToday $MINUTES $PAUSE_AFTER_MINUTES
+    MINUTES=${minutes[0]}
+    PAUSE_AFTER_MINUTES=${minutes[1]}
+
+    if [ $PAUSE_AFTER_MINUTES -le 0 ]; then
+	    PAUSE_AFTER_MINUTES=30
+	    writeToToday $MINUTES $PAUSE_AFTER_MINUTES
+    fi
 
     # Loop for X minutes, testing each minute for alert message.
     #(( ++MINUTES )) 
@@ -233,16 +241,6 @@ while true ; do # loop until cancel
             		paplay /usr/share/sounds/freedesktop/stereo/complete.oga ;
 	    		notify-send -t 1 --urgency=critical --icon=/usr/share/icons/gnome/256x256/status/appointment-soon.png "Locking screen in ""$MINUTES"" minute(s)." ;
 
-			case $MINUTES in 30|60|90)
-				# If the current minutes are not equal to the 
-				# initially provided minutes as argments, then
-				# initiate the pause time. This means that its already been 30 minutes.
-				# This assumes that the maximum time provided is 120 minutes.
-				if [ $ARG_MINUTES -ne $MINUTES ]; then
-					writePauseTime
-				fi
-				;;
-			esac
 			;;
 		32|62|92)
 		    	paplay /usr/share/sounds/freedesktop/stereo/complete.oga ;
@@ -250,18 +248,26 @@ while true ; do # loop until cancel
 			echo "Second case"
 			;;
         esac;
+	
+	if [ $PAUSE_AFTER_MINUTES -le 1 ]; then
+		writePauseTime
+	fi
+
         # Record number of minutes remaining to file other processes can read.
         echo "Lock screen in: $MINUTES Minutes" > ~/.lock-screen-timer-remaining
 
         sleep $SLEEP
-        MINUTES=$(readFromToday $MINUTES)
+        readFromToday $MINUTES $PAUSE_AFTER_MINUTES
+	MINUTES=${minutes[0]}
+	PAUSE_AFTER_MINUTES=${minutes[1]}
 	(( --MINUTES ))
-	writeToToday $MINUTES
+	(( --PAUSE_AFTER_MINUTES ))
+	writeToToday $MINUTES $PAUSE_AFTER_MINUTES
     done
 
     rm /home/$THIS_USER/.lock-screen-timer-remaining # Remove work file others can see our progress with
 
-    writeToToday 0
+    writeToToday 0 $PAUSE_AFTER_MINUTES
 
     logOutOrShutdown
 
