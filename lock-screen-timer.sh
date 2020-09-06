@@ -1,13 +1,12 @@
 #!/bin/bash
 
 # NAME: lock-screen-timer
-# PATH: $HOME/bin
-# DESC: Lock screen in x minutes
-# CALL: Place on Desktop or call from Terminal with "lock-screen-timer 99"
-# DATE: Created Nov 19, 2016. Last revision Mar 29, 2020.
-# UPDT: Updated to support WSL (Windows Subsystem for Linux)
-#       Cohesion with multi-timer. New sysmonitor indicator style.
-
+# PATH: /home/qaisar/scripts/
+# DESC: Lock screen in x minutes and pause in y minutes
+# DATE: Created Nov 19, 2016. Last revision Sep 06, 2020.
+# NOTE: The pause time is written to /var/log/pause_time and is used
+#       for all users.
+#       The login times are written to /var/log/mylabel.lgo.
 # NOTE: Time defaults to 60 minutes.
 #       If previous version is sleeping it is killed.
 #       Write time remaining to ./times/YYYY_MM_DD.time
@@ -72,6 +71,8 @@ function logOutOrShutdown () {
         # Kill every process that belongs to this user except this program.
 	if [ "$SHUT" = "TRUE" ]; then
 		sudo shutdown now
+	elif [ "$SHUT" = "NOPE" ]; then
+		echo "simulated shut"
 	else
 		echo "Locking the SCREEN"
 		pkill -KILL -u $THIS_USER
@@ -103,6 +104,7 @@ function today_fn () {
 
 function isPauseTimeOn () {
    	t=$(readPauseTime)
+	# TESTONLY change below 1 t0 60 to go from seconds to minutes or viceversa.
 	nt=$(( $t + $WAIT_FOR_MINUTES * 60 ))
 	ct=$(date +%s)
 
@@ -124,13 +126,14 @@ function isPauseTimeOn () {
 }
 
 function writePauseTime () {
+	echo "writePauseTime()"
         pt_file="/var/log/pause_time"
         today=$(today_fn)
 	time=$(date +%s)
 	human_time=$(date --date=@$time)
 
 	# Look for todays date in the pause time file.
-	d=$(grep $t $pt_file)
+	d=$(grep $today $pt_file)
 	if [[ $d ]]; then
 		# If found, replace the time.
 		echo "writing new pause time $human_time"
@@ -143,7 +146,8 @@ function writePauseTime () {
 }
 
 MINUTES="$1" # Optional parameter 1 when invoked from terminal.
-PAUSE_AFTER_MINUTES=30
+PAUSE_AFTER_MINUTES=20
+PAUSE_MINUTES=20
 WAIT_FOR_MINUTES=10
 ARG_MINUTES="$1"
 DISPLAY=$(who | egrep $THIS_USER\\s+: | awk '{print $2}')
@@ -158,6 +162,10 @@ for i in "$@"; do
 	if [ $i = "shut" ]; then
 		echo "need to shut"
 		SHUT="TRUE"
+	fi
+	if [ $i = "noshut" ]; then
+		echo "simulate to shut"
+		SHUT="NOPE"
 	fi
 	if [[ $i =~ ^minutes=[0-9]+ ]]; then
 		IFS=’=’ read -ra MINS <<< "$i"
@@ -176,29 +184,40 @@ for i in "$@"; do
 		IFS=’=’ read -ra ARR <<< "$i"
 		THIS_USER="${ARR[1]}"
 		echo "the user is $THIS_USER"
+		HOME="/home/$THIS_USER"
+		echo "the home directory is $HOME"
 	fi
 	echo "$(date) $THIS_USER logs in " >> /var/log/mylabel.lgo
 done
 
 
-# If its a weekend add another 60 minutes
+# If its a weekend add another 60 minutes, otherwise set to 0 initially.
 if [[ $AUTO == "TRUE" ]]; then
 	w=$(isWeekend)
 	if [[ $w == "Yes" ]]; then
-		MINUTES=$(( MINUTES+60 ))
+		# TESTONLY - in test comment below to avoid adding minutes for weekends.
+		# Disable adding 60 minutes on weekends, instead just give 60 mins on weekends.
+		#MINUTES=$(( MINUTES+60 ))
+		MINUTES=60
+		echo "we have $MINUTES"
 	fi
+	# Uncomment the bellow to Ban everything, even weekends.
+	# MINUTES=0
 fi
 
 # Check if lock screen timer already running
 me=`basename "$0"`
-pID=$(pgrep -f "$me") # All PIDs matching lock-screen-timer name
+echo "*** I am $me"
+pID=$(pgrep -l "$me") # All PIDs matching lock-screen-timer name
 PREVIOUS=$(echo "$pID" | grep -v ^"$$") # Strip out this running copy ($$$)
 myPID=$(echo "$pID" | grep  ^"$$") # PID of this program
 
 for i in "$PREVIOUS" ;do
 	if [[ $i != "" ]]; then
 		echo "killing previous process $i"
-		kill $i
+		if [[ "$SHUT" = "TRUE" ]];then
+			kill $i
+		fi
 	fi
 done
 
@@ -216,7 +235,6 @@ while true ; do # loop until cancel
       logOutOrShutdown
     fi
 
-
     # If run in AUTO mode read minutes from todays file if exists
     # or create todays file and put minutes into it.
     readFromToday $MINUTES $PAUSE_AFTER_MINUTES
@@ -224,7 +242,8 @@ while true ; do # loop until cancel
     PAUSE_AFTER_MINUTES=${minutes[1]}
 
     if [ $PAUSE_AFTER_MINUTES -le 0 ]; then
-	    PAUSE_AFTER_MINUTES=30
+	    echo "pause time less than or equal to 0"
+	    PAUSE_AFTER_MINUTES=$PAUSE_MINUTES
 	    writeToToday $MINUTES $PAUSE_AFTER_MINUTES
     fi
 
