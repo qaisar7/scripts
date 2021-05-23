@@ -4,10 +4,13 @@ import os
 import sys
 import datetime
 import gi
+
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, AppIndicator3, GObject
+gi.require_version('AppIndicator3', '0.1')
+
 import time
 from threading import Thread
+from gi.repository import Gtk, AppIndicator3, GObject, GLib
 
 user = os.environ['USER']
 fileName = datetime.date.today().strftime("%Y_%m_%d.time")
@@ -22,7 +25,7 @@ def readMinutesLeft():
 class Indicator():
     def __init__(self):
         self.app = 'test123'
-        iconpath = "/opt/abouttime/icon/indicator_icon.png"
+        iconpath = "/home/qaisar/Downloads/leaf.png"
         self.indicator = AppIndicator3.Indicator.new(
             self.app, iconpath,
             AppIndicator3.IndicatorCategory.OTHER)
@@ -40,11 +43,11 @@ class Indicator():
         menu_sep = Gtk.SeparatorMenuItem()
         menu.append(menu_sep)
         # start squid
-        item_squid = Gtk.MenuItem('Internet')
+        item_squid = Gtk.MenuItem(label='Internet')
         item_squid.connect('activate', self.start_squid)
         menu.append(item_squid)
         # quit
-        item_quit = Gtk.MenuItem('Quit')
+        item_quit = Gtk.MenuItem(label='Quit')
         item_quit.connect('activate', self.stop)
         menu.append(item_quit)
 
@@ -54,14 +57,14 @@ class Indicator():
     def show_seconds(self):
         while True:
             mention = '--'
-            if user != 'qaisar':
+            if user != 'qaisar1':
                 l = readMinutesLeft()
                 mention = l[0] + " mins (" + l[1]+")"
             # apply the interface update using  GObject.idle_add()
-            GObject.idle_add(
+            GLib.idle_add(
                 self.indicator.set_label,
                 mention, self.app,
-                priority=GObject.PRIORITY_DEFAULT
+                priority=GLib.PRIORITY_DEFAULT
                 )
             time.sleep(5)
 
@@ -73,7 +76,6 @@ class Indicator():
         os.system("sudo /home/qaisar/scripts/restartSquid.sh")
 
 Indicator()
-# this is where we call GObject.threads_init()
-GObject.threads_init()
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 Gtk.main()
+
