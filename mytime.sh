@@ -37,7 +37,7 @@ if [[ $command  =~ "show" ]]; then
 	cat "/home/$1/times/$TODAYS_FILE"
 	exit 0
 elif [[ $command =~ "add" ]]; then
-	echo $2 >  "/home/$1/times/$TODAYS_FILE"
+	echo "$2 $3">  "/home/$1/times/$TODAYS_FILE"
 else
 	exit 0
 fi
