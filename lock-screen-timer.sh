@@ -103,14 +103,13 @@ function today_fn () {
 }
 
 function isPauseTimeOn () {
-   	t=$(readPauseTime)
+  t=$(readPauseTime)
 	# TESTONLY change below 1 t0 60 to go from seconds to minutes or viceversa.
 	nt=$(( $t + $WAIT_FOR_MINUTES * 60 ))
 	ct=$(date +%s)
-
 	echo "reading pause time $t" $(date --date=@$t)
-	echo "current time $t" $(date --date=@$ct)
-	echo "next time $t" $(date --date=@$nt)
+	echo "current time $ct" $(date --date=@$ct)
+	echo "next time $nt" $(date --date=@$nt)
 
 	if [[ $t ]];then
 		if [[ "$ct" -le "$nt" ]]; then
@@ -193,6 +192,8 @@ done
 
 # If its a weekend add another 60 minutes, otherwise set to 0 initially.
 if [[ $AUTO == "TRUE" ]]; then
+	# Uncomment the bellow to Ban weekdays.
+	# MINUTES=0
 	w=$(isWeekend)
 	if [[ $w == "Yes" ]]; then
 		# TESTONLY - in test comment below to avoid adding minutes for weekends.
@@ -273,7 +274,7 @@ while true ; do # loop until cancel
 	fi
 
         # Record number of minutes remaining to file other processes can read.
-        echo "Lock screen in: $MINUTES Minutes" > ~/.lock-screen-timer-remaining
+        #echo "Lock screen in: $MINUTES Minutes" > ~/.lock-screen-timer-remaining
 
         sleep $SLEEP
         readFromToday $MINUTES $PAUSE_AFTER_MINUTES
@@ -284,7 +285,7 @@ while true ; do # loop until cancel
 	writeToToday $MINUTES $PAUSE_AFTER_MINUTES
     done
 
-    rm /home/$THIS_USER/.lock-screen-timer-remaining # Remove work file others can see our progress with
+    #rm /home/$THIS_USER/.lock-screen-timer-remaining # Remove work file others can see our progress with
 
     writeToToday 0 $PAUSE_AFTER_MINUTES
 

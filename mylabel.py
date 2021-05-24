@@ -75,6 +75,20 @@ class Indicator():
     def start_squid(self, source):
         os.system("sudo /home/qaisar/scripts/restartSquid.sh")
 
+import os, signal
+
+def kill_process(pstring):
+    # Kills every process except the last one.
+    lines = os.popen("ps ax | grep " + pstring + " | grep -v grep").readlines()
+    for i in range(len(lines)):
+        print(lines[i])
+        if i == len(lines)-1:
+            continue
+        fields = lines[i].split()
+        pid = fields[0]
+        os.kill(int(pid), signal.SIGKILL)
+
+kill_process("/usr/local/bin/mylabel.py")
 Indicator()
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 Gtk.main()
