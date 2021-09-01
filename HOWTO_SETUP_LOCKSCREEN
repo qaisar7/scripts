@@ -18,4 +18,13 @@ source .config/autostart/minutesLeft.desktop &
 
 4. visudo and enter the following
 "user1" ALL=NOPASSWD: /home/admin/scripts/lock-screen-timer.sh, /home/admin/scripts/restartSquid.sh, /home/admin/scripts/logout.sh
+
 "user1" ALL=(ALL)NOPASSWD: /sbin/poweroff, /sbin/reboot, /sbin/shutdown
+
+5. Create all the users via 'addusr' command
+
+6. Create directory named `times` in every user's home directory.
+
+7. Create a file named pause_time in '/var/log/' e.g. touch /var/log/pause_time
+
+8. sudo apt install gir1.2-appindicator3-0.1 
