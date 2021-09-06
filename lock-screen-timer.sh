@@ -81,9 +81,9 @@ function logOutOrShutdown () {
     fi
 }
 
-function isBefore9Am() {
+function isBefore8Am() {
 	H=$(date +%H)
-	if (( 10#$H < 9 )); then
+	if (( 10#$H < 8 )); then
 		return 0;
 	fi
 	return 1; 
@@ -171,6 +171,10 @@ for i in "$@"; do
 		MINUTES="${MINS[1]}"
 		ARG_MINUTES="${MINS[1]}"
 	fi
+	if [[ $i =~ ^pause=[0-9]+ ]]; then
+		IFS=’=’ read -ra ARR <<< "$i"
+		PAUSE_AFTER_MINUTES="${ARR[1]}"
+	fi
 	if [[ $i =~ ^sleep=[0-9]+ ]]; then
 		IFS=’=’ read -ra ARR <<< "$i"
 		SLEEP="${ARR[1]}"
@@ -192,7 +196,7 @@ done
 
 # If its a weekend add another 60 minutes, otherwise set to 0 initially.
 if [[ $AUTO == "TRUE" ]]; then
-	# Uncomment the bellow to Ban weekdays.
+	# Uncomment the below to ban weekdays.
 	# MINUTES=0
 	w=$(isWeekend)
 	if [[ $w == "Yes" ]]; then
@@ -232,7 +236,7 @@ fi
 
 while true ; do # loop until cancel
 
-    if isBefore9Am; then
+    if isBefore8Am; then
       logOutOrShutdown
     fi
 
