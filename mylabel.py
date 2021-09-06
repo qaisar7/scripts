@@ -4,6 +4,7 @@ import os
 import sys
 import datetime
 import gi
+import getpass
 
 gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
@@ -12,7 +13,8 @@ import time
 from threading import Thread
 from gi.repository import Gtk, AppIndicator3, GObject, GLib
 
-user = os.environ['USER']
+user=os.popen('logname').read()[0:-1]
+print("The user is %s" % user)
 fileName = datetime.date.today().strftime("%Y_%m_%d.time")
 filePath = "/home/"+user+"/times/"+fileName
 
