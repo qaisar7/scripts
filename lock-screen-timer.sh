@@ -144,7 +144,7 @@ function writePauseTime () {
 		sudo echo "$today $time $human_time" >> $pt_file
 	fi
 }
-
+// Default values.
 MINUTES="$1" # Optional parameter 1 when invoked from terminal.
 PAUSE_AFTER_MINUTES=20
 DEFAULT_PAUSE_MINUTES=20
