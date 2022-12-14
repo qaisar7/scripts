@@ -81,9 +81,10 @@ function logOutOrShutdown () {
     fi
 }
 
-function isBefore8Am() {
+function isTimeBefore() {
+        #'$1' is the hour before which login will not be allowed
 	H=$(date +%H)
-	if (( 10#$H < 8 )); then
+	if (( 10#$H < $1 )); then
 		return 0;
 	fi
 	return 1; 
@@ -146,7 +147,11 @@ function writePauseTime () {
 
 MINUTES="$1" # Optional parameter 1 when invoked from terminal.
 PAUSE_AFTER_MINUTES=20
-PAUSE_MINUTES=20
+DEFAULT_PAUSE_MINUTES=20
+SKIP_PAUSE=0
+OVERRIDE_TIME=0
+#Start after this hour
+START_AFTER=6
 WAIT_FOR_MINUTES=10
 ARG_MINUTES="$1"
 DISPLAY=$(who | egrep $THIS_USER\\s+: | awk '{print $2}')
@@ -159,12 +164,20 @@ fi
 
 for i in "$@"; do
 	if [ $i = "shut" ]; then
-		echo "need to shut"
+		echo "will actually shut"
 		SHUT="TRUE"
 	fi
 	if [ $i = "noshut" ]; then
 		echo "simulate to shut"
 		SHUT="NOPE"
+	fi
+	if [ $i = "skip_pause" ]; then
+		echo "skipping pause time"
+		SKIP_PAUSE=1
+	fi
+	if [ $i = "override" ]; then
+		echo "override today's time"
+		writeToToday $MINUTES $PAUSE_AFTER_MINUTES
 	fi
 	if [[ $i =~ ^minutes=[0-9]+ ]]; then
 		IFS=’=’ read -ra MINS <<< "$i"
@@ -174,6 +187,7 @@ for i in "$@"; do
 	if [[ $i =~ ^pause=[0-9]+ ]]; then
 		IFS=’=’ read -ra ARR <<< "$i"
 		PAUSE_AFTER_MINUTES="${ARR[1]}"
+		DEFAULT_PAUSE_MINUTES="${ARR[1]}"
 	fi
 	if [[ $i =~ ^sleep=[0-9]+ ]]; then
 		IFS=’=’ read -ra ARR <<< "$i"
@@ -203,7 +217,7 @@ if [[ $AUTO == "TRUE" ]]; then
 		# TESTONLY - in test comment below to avoid adding minutes for weekends.
 		# Disable adding 60 minutes on weekends, instead just give 60 mins on weekends.
 		#MINUTES=$(( MINUTES+60 ))
-		MINUTES=60
+		MINUTES=30
 		echo "we have $MINUTES"
 	fi
 	# Uncomment the bellow to Ban everything, even weekends.
@@ -236,8 +250,8 @@ fi
 
 while true ; do # loop until cancel
 
-    if isBefore8Am; then
-      logOutOrShutdown
+    if isTimeBefore $START_AFTER; then
+	logOutOrShutdown
     fi
 
     # If run in AUTO mode read minutes from todays file if exists
@@ -248,7 +262,7 @@ while true ; do # loop until cancel
 
     if [ $PAUSE_AFTER_MINUTES -le 0 ]; then
 	    echo "pause time less than or equal to 0"
-	    PAUSE_AFTER_MINUTES=$PAUSE_MINUTES
+	    PAUSE_AFTER_MINUTES=$DEFAULT_PAUSE_MINUTES
 	    writeToToday $MINUTES $PAUSE_AFTER_MINUTES
     fi
 
@@ -256,13 +270,16 @@ while true ; do # loop until cancel
     #(( ++MINUTES )) 
     while (( $MINUTES > 0 )); do
 
-       if isPauseTimeOn; then
-          logOutOrShutdown
+       if [ $SKIP_PAUSE -eq 0 ];then
+	       if isPauseTimeOn; then
+	       		echo "pause time is ON " $(isPauseTimeOn) 
+         		logOutOrShutdown
+		fi
        fi
 
        case $MINUTES in 
 		1|2|3|5|10|15|30|45|60|90|120|480|960|1920)
-            		paplay /usr/share/sounds/freedesktop/stereo/complete.oga ;
+            		sudo paplay /usr/share/sounds/freedesktop/stereo/complete.oga ;
 	    		notify-send -t 1 --urgency=critical --icon=/usr/share/icons/gnome/256x256/status/appointment-soon.png "Locking screen in ""$MINUTES"" minute(s)." ;
 
 			;;
